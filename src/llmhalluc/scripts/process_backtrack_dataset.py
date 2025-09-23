@@ -88,8 +88,6 @@ def main() -> None:
             # Create converter for each split
             converter = get_dataset_converter(
                 "backtrack",
-                cache_dir=args.cache_dir,
-                data_dir=args.data_dir,
                 tokenizer=tokenizer,
                 max_tokens=args.max_tokens,
                 no_spc_vocab=no_spc_vocab,
@@ -108,8 +106,6 @@ def main() -> None:
         # Single split processing
         converter = get_dataset_converter(
             "backtrack",
-            cache_dir=args.cache_dir,
-            data_dir=args.data_dir,
             tokenizer=tokenizer,
             max_tokens=args.max_tokens,
             no_spc_vocab=no_spc_vocab,

@@ -12,13 +12,9 @@ class DatasetConverter(ABC):
     This class follows the same pattern as LLaMA-Factory's DatasetConverter,
     providing a common interface for converting dataset examples to a standard format.
 
-    Args:
-        cache_dir: Directory for caching downloaded datasets.
-        data_dir: Directory for saving processed datasets.
+    Converters are responsible only for transforming individual examples,
+    not for loading or saving datasets.
     """
-
-    cache_dir: str
-    data_dir: str
 
     @abstractmethod
     def __call__(self, example: dict[str, Any]) -> dict[str, Any]:

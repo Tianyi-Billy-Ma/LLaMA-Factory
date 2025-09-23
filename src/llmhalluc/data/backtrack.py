@@ -19,8 +19,6 @@ class BacktrackDatasetConverter(DatasetConverter):
     functionality to dataset examples by introducing random tokens and backtrack signals.
 
     Args:
-        cache_dir: Directory for caching downloaded datasets.
-        data_dir: Directory for saving processed datasets.
         tokenizer: Tokenizer for encoding/decoding text.
         max_tokens: Maximum number of random tokens to add.
         no_spc_vocab: List of non-special token IDs for random selection.

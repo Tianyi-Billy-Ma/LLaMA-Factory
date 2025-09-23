@@ -31,19 +31,34 @@ def main() -> None:
     # Handle single split as string
     splits = args.split[0] if len(args.split) == 1 else args.split
 
-    # Create converter
-    converter = get_dataset_converter(
-        args.converter,
-        cache_dir=args.cache_dir,
-        data_dir=args.data_dir,
-        redownload=getattr(args, "redownload", False),
-    )
+    # Create converter (converters only process examples, not load/save datasets)
+    converter = get_dataset_converter(args.converter)
 
-    # Special handling for squad converter which has its own load method
-    if args.converter == "squad":
-        converter.load_and_process_dataset(splits)
+    # Handle squad dataset loading from HuggingFace
+    if args.converter == "squad" and args.dataset_name == "squad_v2":
+        splits_list = splits if isinstance(splits, list) else [splits]
+
+        for split in splits_list:
+            # Load dataset from HuggingFace
+            dataset = load_dataset(
+                "rajpurkar/squad_v2",
+                cache_dir=args.cache_dir,
+                split=split,
+                download_mode="force_redownload" if args.redownload else "reuse_dataset_if_exists",
+            )
+
+            # Process dataset using converter
+            process_dataset(
+                dataset=dataset,
+                processor=converter,
+                dataset_name="squad_v2",
+                data_dir=args.data_dir,
+                split=split,
+                repeat=args.repeat,
+                num_proc=args.num_proc,
+            )
     else:
-        # Generic processing for other converters
+        # Generic processing for other converters (load from local JSON files)
         input_path = Path(args.data_dir) / args.dataset_name
 
         if isinstance(splits, list):
