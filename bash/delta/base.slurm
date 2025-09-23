@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name="llmhalluc"
 #SBATCH --output="a.out.%j.%N.out"
-#SBATCH --partition=gpuA100x4
+#SBATCH --partition=ghx4*
 #SBATCH --mem=64G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1  # could be 1 for py-torch
