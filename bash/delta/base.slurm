@@ -22,4 +22,4 @@ source ~/.bashrc
 cd /projects/bemy/tma3/LLaMA-Factory
 source ./bash/sys/activate_env.sh
 
-python ./src/llamafactory/cli.py train ./configs/qwen3/qwen3_nothink_bt_squad_v2_train.yaml 
+llamafactory-cli train ./configs/qwen3/qwen3_nothink_bt_squad_v2_train.yaml 

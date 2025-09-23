@@ -26,10 +26,10 @@ fi
 
 echo "✅ uv found: $(uv --version)"
 
-# Initialize uv with Python 3.12 if .venv doesn't exist
+# Create virtual environment with Python 3.12 if .venv doesn't exist
 if [ ! -d ".venv" ]; then
-    echo "🐍 Initializing uv with Python 3.12..."
-    uv init --python 3.12
+    echo "🐍 Creating virtual environment with Python 3.12..."
+    uv venv --python 3.12
 else
     echo "✅ Virtual environment (.venv) already exists"
 fi
