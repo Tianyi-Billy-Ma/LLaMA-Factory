@@ -1,8 +1,0 @@
-
-
-
-
-
-def squad_processor(
-    
-)
