@@ -10,7 +10,7 @@ def backtrack_processor(
     example: dict[str, Any],
     tokenizer: PreTrainedTokenizer,
     max_tokens: int = 10,
-    key_mapping: dict[str, str] = {"prompt": "prompt", "query": "input", "response": "answer"},
+    key_mapping: dict[str, str] = {"prompt": "prompt", "query": "query", "response": "response"},
     no_spc_vocab: list[int] = None,
     split: str = "train",
 ) -> dict[str, Any]:

@@ -9,11 +9,20 @@
 #$ -l gpu_card=2     # Run on 1 GPU card
 #$ -N LLMHalluc      # Specify job name
 
-# Source bashrc to load all environment settings including private modules
 source ~/.bashrc
 
 # Change to project directory
 cd ~/Projects/LLaMA-Factory
 source ./bash/sys/activate_env.sh
-echo $EXP_CONFIG
-llamafactory-cli train $EXP_CONFIG 
+
+
+python - <<'PY'
+import torch, sys
+print("PyTorch CUDA available:", torch.cuda.is_available())
+print("GPU count:", torch.cuda.device_count())
+print("Device names:", [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())])
+assert torch.cuda.is_available(), "No GPU found; aborting."
+PY
+
+
+llamafactory-cli train ./configs/qwen3/qwen3_nothink_bt_squad_v2_train.yaml 
