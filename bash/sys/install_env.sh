@@ -8,15 +8,31 @@ set -e  # Exit on any error
 
 echo "🚀 Starting LLaMA-Factory environment installation..."
 
-# Check if uv is installed
+# Check if uv is installed, install if not found
 if ! command -v uv &> /dev/null; then
-    echo "❌ Error: uv is not installed. Please install uv first."
-    echo "   Visit: https://docs.astral.sh/uv/getting-started/installation/"
-    exit 1
+    echo "📥 uv not found, installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    
+    # Source the shell profile to make uv available in current session
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    # Verify uv installation
+    if ! command -v uv &> /dev/null; then
+        echo "❌ Error: Failed to install uv. Please install manually."
+        echo "   Visit: https://docs.astral.sh/uv/getting-started/installation/"
+        exit 1
+    fi
 fi
 
 echo "✅ uv found: $(uv --version)"
 
+# Initialize uv with Python 3.12 if .venv doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "🐍 Initializing uv with Python 3.12..."
+    uv init --python 3.12
+else
+    echo "✅ Virtual environment (.venv) already exists"
+fi
 
 # Install dependencies from requirements.txt
 echo "📦 Installing dependencies from requirements.txt..."
