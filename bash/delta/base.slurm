@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name="llmhalluc"
 #SBATCH --output="a.out.%j.%N.out"
-#SBATCH --partition=ghx4*
+#SBATCH --partition=ghx4
 #SBATCH --mem=64G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1  # could be 1 for py-torch
@@ -19,7 +19,7 @@
 #SBATCH --mail-type="BEGIN,END"
 
 source ~/.bashrc
-cd /work/nvme/bemy/tma3/LLaMA-Factory
+cd /projects/bemy/tma3/LLaMA-Factory
 source ./bash/sys/activate_env.sh
 
 llamafactory-cli train ./configs/qwen3/qwen3_nothink_bt_squad_v2_train.yaml 
