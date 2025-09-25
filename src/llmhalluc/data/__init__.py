@@ -3,28 +3,14 @@
 from .base import DatasetConverter
 from .squad import SquadDatasetConverter
 from .backtrack import BacktrackDatasetConverter, BACKTRACK_TOKEN
+from .gsm8k import GSM8KDatasetConverter
 
 # Registry of available converters
 DATASET_CONVERTERS = {
     "squad": SquadDatasetConverter,
     "backtrack": BacktrackDatasetConverter,
+    "gsm8k": GSM8KDatasetConverter,
 }
-
-
-def register_dataset_converter(name: str, converter_class: type[DatasetConverter]) -> None:
-    """Register a new dataset converter.
-
-    Args:
-        name: Name of the converter.
-        converter_class: Converter class to register.
-
-    Raises:
-        ValueError: If converter name already exists.
-    """
-    if name in DATASET_CONVERTERS:
-        raise ValueError(f"Dataset converter {name} already exists.")
-
-    DATASET_CONVERTERS[name] = converter_class
 
 
 def get_dataset_converter(name: str, **kwargs) -> DatasetConverter:

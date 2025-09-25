@@ -1,4 +1,24 @@
 {
+  "gsm8k_train": {
+    "hf_hub_url": "mtybilly/GSM8K",
+    "formatting": "alpaca",
+    "split": "train",
+    "columns": {
+      "prompt": "prompt",
+      "query": "query",
+      "response": "response"
+    }
+  },
+  "gsm8k_eval": {
+    "hf_hub_url": "mtybilly/GSM8K",
+    "formatting": "alpaca",
+    "split": "test",
+    "columns": {
+      "prompt": "prompt",
+      "query": "query",
+      "response": "response"
+    }
+  },
   "squad_v2_backtrack_train": {
     "file_name": "squad_v2_backtrack/train.json",
     "formatting": "alpaca",

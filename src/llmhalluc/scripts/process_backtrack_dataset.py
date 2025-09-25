@@ -36,15 +36,21 @@ def process_backtrack_dataset(
     dataset = load_dataset("json", data_files=str(input_path))["train"]
 
     # Process with backtrack converter
-    process_dataset(
+    processed_dataset = process_dataset(
         dataset=dataset,
         processor=converter,
         dataset_name=f"{dataset_name}_backtrack",
-        data_dir=data_dir,
         split=split,
         repeat=repeat,
         num_proc=num_proc,
     )
+
+    # # Save processed dataset
+    save_path = Path(data_dir) / dataset_name / f"{split}.json"
+    if not save_path.parent.exists():
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    processed_dataset.to_json(str(save_path), orient="records")
 
 
 def main() -> None:

@@ -8,13 +8,11 @@ from datasets import Dataset, DatasetDict
 def process_dataset(
     dataset: Dataset | DatasetDict,
     processor: Callable[[dict[str, Any]], dict[str, Any]],
-    dataset_name: str,
-    data_dir: str = "./data",
-    split: str | list[str] = "train",
+    split: str | list[str] | None = None,
     repeat: int = 1,
     num_proc: int = 12,
     **kwargs,
-) -> None:
+) -> Dataset | DatasetDict:
     """Process dataset using a converter function.
 
     This function applies a processor function to a dataset and saves the result.
@@ -24,48 +22,46 @@ def process_dataset(
         dataset: Input dataset to process.
         processor: Function to apply to each example.
         dataset_name: Name for the processed dataset.
-        data_dir: Directory to save processed dataset.
         split: Dataset split(s) to process.
         repeat: Number of times to repeat the dataset (only for train split).
         num_proc: Number of processes for parallel processing.
         **kwargs: Additional arguments for dataset.map().
     """
-    if isinstance(split, list):
+    if isinstance(dataset, DatasetDict):
+        if split is None:
+            split = list(dataset.keys())
+        else:
+            split = split if isinstance(split, list) else [split]
+        dataset_to_return = DatasetDict()
         for s in split:
-            process_dataset(
-                dataset=dataset,
+            dataset_to_return[s] = process_dataset(
+                dataset=dataset[s],
                 processor=processor,
-                dataset_name=dataset_name,
-                data_dir=data_dir,
                 split=s,
                 repeat=repeat,
                 num_proc=num_proc,
                 **kwargs,
             )
-        return
+    else:
+        # Repeat dataset if specified (only for train split)
+        actual_repeat = repeat if split == "train" else 1
+        if actual_repeat > 1:
+            dataset = dataset.repeat(actual_repeat)
 
-    # Handle DatasetDict
-    if isinstance(dataset, DatasetDict):
-        dataset = dataset[split]
+        # Process dataset
+        column_names = dataset.column_names
+        dataset_to_return = dataset.map(
+            processor,
+            batched=False,
+            num_proc=num_proc,
+            remove_columns=column_names,
+            **kwargs,
+        )
+    return dataset_to_return
 
-    # Repeat dataset if specified (only for train split)
-    actual_repeat = repeat if split == "train" else 1
-    if actual_repeat > 1:
-        dataset = dataset.repeat(actual_repeat)
+    # # Save processed dataset
+    # save_path = Path(data_dir) / dataset_name / f"{split}.json"
+    # if not save_path.parent.exists():
+    #     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Process dataset
-    column_names = dataset.column_names
-    processed_dataset = dataset.map(
-        processor,
-        batched=False,
-        num_proc=num_proc,
-        remove_columns=column_names,
-        **kwargs,
-    )
-
-    # Save processed dataset
-    save_path = Path(data_dir) / dataset_name / f"{split}.json"
-    if not save_path.parent.exists():
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-
-    processed_dataset.to_json(str(save_path), orient="records")
+    # processed_dataset.to_json(str(save_path), orient="records")

@@ -15,5 +15,5 @@ source ./bash/sys/activate_env.sh
 echo $CUDA_VISIBLE_DEVICES
 
 # llamafactory-cli train ./configs/qwen3/0.6B/gsm8k_train.yaml
-lla
-llamafactory-cli train ./configs/qwen3/4B/gsm8k_eval.yaml
+python scripts/vllm_infer.py \
+    --model_name_or_path Qwen/Qwen3-0.6B \

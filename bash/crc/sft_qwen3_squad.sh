@@ -14,6 +14,4 @@ source ./bash/sys/activate_env.sh
 
 echo $CUDA_VISIBLE_DEVICES
 
-# llamafactory-cli train ./configs/qwen3/0.6B/gsm8k_train.yaml
-lla
-llamafactory-cli train ./configs/qwen3/4B/gsm8k_eval.yaml
+llamafactory-cli train ./configs/qwen3/qwen3_4b_squad_v2_ds0_train.yaml 

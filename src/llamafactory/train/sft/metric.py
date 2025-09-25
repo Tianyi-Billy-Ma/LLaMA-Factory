@@ -21,6 +21,8 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import torch
+from evaluate import load
+from sklearn.metrics import f1_score
 from transformers.utils import is_nltk_available
 
 from ...extras.constants import IGNORE_INDEX
@@ -67,6 +69,9 @@ class ComputeAccuracy:
         if hasattr(self, "score_dict"):
             result = {k: float(np.mean(v)) for k, v in self.score_dict.items()}
 
+        # # >>>>>>>>
+        # self.score_dict = {"accuracy": [], "f1": []}
+        # # <<<<<<<<
         self.score_dict = {"accuracy": []}
         return result
 
@@ -79,6 +84,9 @@ class ComputeAccuracy:
             pred, label = preds[i, :-1], labels[i, 1:]
             label_mask = label != IGNORE_INDEX
             self.score_dict["accuracy"].append(np.mean(pred[label_mask] == label[label_mask]))
+            # # >>>>>>>>
+            # self.score_dict["f1"].append(f1_score(pred[label_mask], label[label_mask], average="micro"))
+            # # <<<<<<<<
 
         if compute_result:
             return self._dump()
@@ -130,5 +138,10 @@ class ComputeSimilarity:
             bleu_score = sentence_bleu([list(label)], list(pred), smoothing_function=SmoothingFunction().method3)
             self.score_dict["bleu-4"].append(round(bleu_score * 100, 4))
 
+            # >>>>>>>> Exact Match
+            em = load("exact_match")
+            em_score = em.compute(predictions=list(pred), references=list(label))
+            self.score_dict["exact_match"].append(round(em_score["exact_match"] * 100, 4))
+            # <<<<<<<<
         if compute_result:
             return self._dump()
