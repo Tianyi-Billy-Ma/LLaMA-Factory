@@ -138,10 +138,10 @@ class ComputeSimilarity:
             bleu_score = sentence_bleu([list(label)], list(pred), smoothing_function=SmoothingFunction().method3)
             self.score_dict["bleu-4"].append(round(bleu_score * 100, 4))
 
-            # >>>>>>>> Exact Match
-            em = load("exact_match")
-            em_score = em.compute(predictions=list(pred), references=list(label))
-            self.score_dict["exact_match"].append(round(em_score["exact_match"] * 100, 4))
-            # <<<<<<<<
+            # # >>>>>>>> Exact Match
+            # em = load("exact_match")
+            # em_score = em.compute(predictions=list(pred), references=list(label))
+            # self.score_dict["exact_match"].append(round(em_score["exact_match"] * 100, 4))
+            # # <<<<<<<<
         if compute_result:
             return self._dump()
