@@ -32,12 +32,20 @@ def main(arg_list: list[str] = None):
     # Create converter (converters only process examples, not load/save datasets)
     converter = get_dataset_converter(args.converter)
 
-    dataset = load_dataset(
-        args.hf_dataset_url,
-        args.subset,
-        cache_dir=args.cache_dir,
-        download_mode="force_redownload" if args.redownload else "reuse_dataset_if_exists",
-    )
+    if args.subset:
+        dataset = load_dataset(
+            args.hf_dataset_url,
+            args.subset,
+            cache_dir=args.cache_dir,
+            download_mode="force_redownload" if args.redownload else "reuse_dataset_if_exists",
+        )
+    else:
+        dataset = load_dataset(
+            args.hf_dataset_url,
+            cache_dir=args.cache_dir,
+            download_mode="force_redownload" if args.redownload else "reuse_dataset_if_exists",
+        )
+
     processed_dataset = process_dataset(
         dataset=dataset,
         processor=converter,

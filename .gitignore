@@ -193,6 +193,10 @@ predictions_score.json
 
 # Ignore all data directories by default
 **/data/*
+**/outputs/
+**/models/
+**/logs/
+**/wandb/
 
 # Exception: Don't ignore the llmhalluc data module (source code)
 !src/llmhalluc/data/

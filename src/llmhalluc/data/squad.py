@@ -28,5 +28,5 @@ class SquadDatasetConverter(DatasetConverter):
         return {
             "prompt": QA_INSTRUCTION,
             "query": f"Context: {example['context']}\nQuestion: {example['question']}",
-            "response": (example["answers"]["text"][0] if len(example["answers"]["text"]) > 0 else "IDK"),
+            "response": (example["answers"]["text"][0] if len(example["answers"]["text"]) > 0 else "unanswerable"),
         }

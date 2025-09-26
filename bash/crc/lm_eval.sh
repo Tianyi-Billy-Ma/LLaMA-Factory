@@ -12,12 +12,51 @@ source ~/.bashrc
 cd ~/Projects/LLaMA-Factory
 source ./bash/sys/activate_env.sh
 
-echo $CUDA_VISIBLE_DEVICES
 
-# llamafactory-cli train ./configs/qwen3/0.6B/gsm8k_train.yaml
+WANDB_PROJECT_NAME="llamafactory"
+MODEL_DIR="./models"
+OUTPUT_DIR="./outputs"
+DDP=1
 
-TASK_NAME="gsm8k_cot_zeroshot"
-MODEL_PATH='./Experiments/qwen3-0.6B/GSM8K/vanilla/sft'
+STAGE="sft"
+FINETUNING_TYPE="lora"
 
+MODEL_NAME="qwen3-0.6b"
+TASK_NAME="gsm8k"
+FULL_MODEL_NAME="${MODEL_NAME}-${TASK_NAME}-${FINETUNING_TYPE}"
+MODEL_PATH="${MODEL_DIR}/${FULL_MODEL_NAME}"
+OUTPUT_PATH="${OUTPUT_DIR}/${MODEL_NAME}/${TASK_NAME}/${STAGE}/${FINETUNING_TYPE}/lm_eval"
+WANDB_NAME="${FULL_MODEL_NAME}"
+NUM_FEWSHOT=0
+SEED=3
 
-lm-eval --mode hf 
+# Build the base command
+BASE_CMD="lm_eval --model hf \
+    --model_args pretrained=${MODEL_PATH} \
+    --tasks ${TASK_NAME} \
+    --output_path ${OUTPUT_PATH} \
+    --num_fewshot ${NUM_FEWSHOT} \
+    --seed ${SEED} \
+    --wandb_args project=${WANDB_PROJECT_NAME},name=${WANDB_NAME} \
+    --log_samples \
+    --apply_chat_template"
+
+echo "================================================"
+echo "Available GPUs: $CUDA_VISIBLE_DEVICES"
+echo "Model Path: ${MODEL_PATH}"
+echo "Output Path: ${OUTPUT_PATH}"
+echo "Num of Fewshot: ${NUM_FEWSHOT}"
+echo "Seed: ${SEED}"
+echo "================================================"
+
+# Conditionally prepend accelerate launch for DDP
+if [ $DDP -eq 1 ]; then
+    CMD="accelerate launch -m ${BASE_CMD}"
+else
+    CMD="${BASE_CMD}"
+fi
+
+# Execute the command
+eval $CMD
+    
+    
