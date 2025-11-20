@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# >>>>>>>>
+from .customize import CustomizeDatasetProcessor
+# <<<<<<<<
+
 from .feedback import FeedbackDatasetProcessor
 from .pairwise import PairwiseDatasetProcessor
 from .pretrain import PretrainDatasetProcessor
@@ -21,6 +25,9 @@ from .unsupervised import UnsupervisedDatasetProcessor
 
 
 __all__ = [
+    # >>>>>>>>
+    "CustomizeDatasetProcessor",
+    # <<<<<<<<
     "DatasetProcessor",
     "FeedbackDatasetProcessor",
     "PackedSupervisedDatasetProcessor",

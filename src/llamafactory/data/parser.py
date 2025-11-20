@@ -70,6 +70,9 @@ class DatasetAttr:
     def __repr__(self) -> str:
         return self.dataset_name
 
+    # >>>>>>>>
+    # def set_attr(self, key: str, obj: dict[str, Any], default: Optional[Any] = None, ) -> None:
+    # <<<<<<<<
     def set_attr(self, key: str, obj: dict[str, Any], default: Optional[Any] = None) -> None:
         setattr(self, key, obj.get(key, default))
 

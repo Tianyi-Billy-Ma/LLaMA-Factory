@@ -67,6 +67,9 @@ def vllm_infer(
     video_fps: float = 2.0,
     video_maxlen: int = 128,
     batch_size: int = 1024,
+    # >>>>>>>>
+    output_dir: str = "dummy_dir",
+    # <<<<<<<<
 ):
     r"""Perform batch generation using vLLM engine, which supports tensor parallelism.
 
@@ -96,7 +99,7 @@ def vllm_infer(
         )
     )
 
-    training_args = Seq2SeqTrainingArguments(output_dir="dummy_dir")
+    training_args = Seq2SeqTrainingArguments(output_dir=output_dir)
     tokenizer_module = load_tokenizer(model_args)
     tokenizer = tokenizer_module["tokenizer"]
     template_obj = get_template_and_fix_tokenizer(tokenizer, data_args)

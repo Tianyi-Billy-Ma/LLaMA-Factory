@@ -138,6 +138,13 @@ class DataArguments:
         metadata={"help": "Whether or not to use a shared file system for the datasets."},
     )
 
+    # >>>>>>>>
+    replace_text: Optional[dict[str, str]] = field(
+        default=None,
+        metadata={"help": "A dictionary of text replacements to apply to the dataset."},
+    )
+    # <<<<<<<<
+
     def __post_init__(self):
         def split_arg(arg):
             if isinstance(arg, str):

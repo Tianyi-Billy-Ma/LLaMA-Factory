@@ -81,10 +81,10 @@ def _description_based_initialization(
     embed_vocab_size = embed_weight.size(0)
     if embed_vocab_size > len(tokenizer):
         logger.warning_rank0(
-            f"Embedding vocabulary size {embed_vocab_size} is greater than tokenizer size {len(tokenizer)}, update num_new_tokens to {len(descriptions)}"
+            f"Embedding vocabulary size {embed_vocab_size} is greater than tokenizer size {len(tokenizer)}."
         )
-        num_new_tokens = len(descriptions)
     # <<<<<<<<
+    # >>>>>>>>
     for i, (key, desc) in enumerate(descriptions.items()):
         # <<<<<<<<
         # for i, desc in enumerate(descriptions.values()):
@@ -98,9 +98,9 @@ def _description_based_initialization(
         if isinstance(special_token_id, list):
             logger.warning_rank0(f"Expected 1 special token id, got {len(special_token_id)} for key {key}")
             special_token_id = special_token_id[0]
-        if special_token_id != len(tokenizer) - num_new_tokens + i:
+        if special_token_id != embed_vocab_size - num_new_tokens + i:
             logger.warning_rank0(
-                f"Special token id {special_token_id} is not equal to {len(tokenizer) - num_new_tokens + i} for key {key}"
+                f"Special token id {special_token_id} is not equal to {embed_vocab_size - num_new_tokens + i} for key {key}"
             )
         # <<<<<<<<
         with torch.no_grad():
