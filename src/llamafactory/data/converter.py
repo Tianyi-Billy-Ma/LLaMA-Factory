@@ -367,6 +367,59 @@ class OpenAIDatasetConverter(DatasetConverter):
         return output
 
 
+# >>>>>>>>
+@dataclass
+class CustomizeDatasetConverter(DatasetConverter):
+    base_converter: Optional[DatasetConverter] = None
+
+    def __post_init__(self):
+        if self.data_args.replace_text is not None:
+            for source_text, target_text in self.data_args.replace_text.items():
+                logger.info_rank0(f"Replacing {source_text} -> {target_text}")
+
+    def __call__(self, example: dict[str, Any]) -> dict[str, Any]:
+        if self.data_args.replace_text is not None:
+            for source_text, target_text in self.data_args.replace_text.items():
+                example = self._apply_replacement(example, source_text, target_text)
+        return self.base_converter(example)
+
+    def _apply_replacement(self, example: dict[str, Any], source_text: str, target_text: str) -> dict[str, Any]:
+        # aplaca columns
+        if self.dataset_attr.history and isinstance(example.get(self.dataset_attr.history, None), list):
+            tmp = []
+            for old_prompt, old_response in example[self.dataset_attr.history]:
+                tmp_prompt = old_prompt.replace(source_text, target_text)
+                tmp_response = old_response.replace(source_text, target_text)
+                tmp.append((tmp_prompt, tmp_response))
+            example[self.dataset_attr.history] = tmp
+
+        if self.dataset_attr.prompt and isinstance(example.get(self.dataset_attr.prompt, None), str):
+            example[self.dataset_attr.prompt] = example[self.dataset_attr.prompt].replace(source_text, target_text)
+        if self.dataset_attr.query and isinstance(example.get(self.dataset_attr.query, None), str):
+            example[self.dataset_attr.query] = example[self.dataset_attr.query].replace(source_text, target_text)
+
+        if self.dataset_attr.response and isinstance(example.get(self.dataset_attr.response, None), str):
+            example[self.dataset_attr.response] = example[self.dataset_attr.response].replace(source_text, target_text)
+
+        # sharegpt columns
+        if self.dataset_attr.messages and isinstance(example.get(self.dataset_attr.messages, None), list):
+            raise NotImplementedError("Sharegpt messages replacement is not implemented yet.")
+
+        # common columns
+        if self.dataset_attr.system and isinstance(example.get(self.dataset_attr.system, None), str):
+            example[self.dataset_attr.system] = example[self.dataset_attr.system].replace(source_text, target_text)
+
+        # dpo columns
+        if self.dataset_attr.chosen and isinstance(example.get(self.dataset_attr.chosen, None), str):
+            example[self.dataset_attr.chosen] = example[self.dataset_attr.chosen].replace(source_text, target_text)
+        if self.dataset_attr.rejected and isinstance(example.get(self.dataset_attr.rejected, None), str):
+            example[self.dataset_attr.rejected] = example[self.dataset_attr.rejected].replace(source_text, target_text)
+        return example
+
+
+# <<<<<<<<
+
+
 DATASET_CONVERTERS = {
     "alpaca": AlpacaDatasetConverter,
     "sharegpt": SharegptDatasetConverter,
@@ -417,6 +470,14 @@ def align_dataset(
         )
 
     dataset_converter = get_dataset_converter(dataset_attr.formatting, dataset_attr, data_args)
+
+    # >>>>>>>>
+    dataset_converter = CustomizeDatasetConverter(
+        dataset_attr=dataset_attr,
+        data_args=data_args,
+        base_converter=dataset_converter,
+    )
+    # <<<<<<<<
     return dataset.map(
         dataset_converter,
         batched=False,

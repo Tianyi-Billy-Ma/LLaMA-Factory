@@ -25,9 +25,6 @@ from .converter import align_dataset
 from .data_utils import get_dataset_module, merge_dataset, read_cloud_json, split_dataset
 from .parser import get_dataset_list
 from .processor import (
-    # >>>>>>>>
-    CustomizeDatasetProcessor,
-    # <<<<<<<<
     FeedbackDatasetProcessor,
     PackedSupervisedDatasetProcessor,
     PairwiseDatasetProcessor,
@@ -225,21 +222,7 @@ def _get_dataset_processor(
         dataset_processor_class = FeedbackDatasetProcessor
     else:
         dataset_processor_class = UnsupervisedDatasetProcessor
-
-    # >>>>>>>>
-    return (
-        CustomizeDatasetProcessor(
-            template=template,
-            tokenizer=tokenizer,
-            processor=processor,
-            data_args=data_args,
-            base_class=dataset_processor_class,
-        )
-        if data_args.replace_text is not None
-        else dataset_processor_class(template=template, tokenizer=tokenizer, processor=processor, data_args=data_args)
-    )
-    # <<<<<<<<
-    # return dataset_processor_class(template=template, tokenizer=tokenizer, processor=processor, data_args=data_args)
+    return dataset_processor_class(template=template, tokenizer=tokenizer, processor=processor, data_args=data_args)
 
 
 def _get_preprocessed_dataset(
