@@ -38,6 +38,10 @@ from ..extras.packages import is_apollo_available, is_galore_available, is_ray_a
 from ..hparams import FinetuningArguments, ModelArguments
 from ..model import find_all_linear_modules, load_model, load_tokenizer, load_valuehead_params
 
+# >>>>>>>>
+from ..model.custom_reward import load_custom_reward
+# <<<<<<<<
+
 
 if is_galore_available():
     from galore_torch import GaLoreAdafactor, GaLoreAdamW, GaLoreAdamW8bit  # type: ignore
@@ -146,14 +150,20 @@ def create_ref_model(
     return ref_model
 
 
+# >>>>>>>>
 def create_reward_model(
     model: "AutoModelForCausalLMWithValueHead", model_args: "ModelArguments", finetuning_args: "FinetuningArguments"
-) -> Optional["AutoModelForCausalLMWithValueHead"]:
+) -> Any:
     r"""Create reward model for PPO training."""
     if finetuning_args.reward_model_type == "api":
         assert finetuning_args.reward_model.startswith("http"), "Please provide full url."
         logger.info_rank0(f"Use reward server {finetuning_args.reward_model}")
         return finetuning_args.reward_model
+    elif finetuning_args.reward_model_type == "custom":
+        assert finetuning_args.reward_model is not None, "Please provide python path for custom reward."
+        reward_fn = load_custom_reward(finetuning_args.reward_model)
+        logger.info_rank0(f"Loaded custom reward callable from {finetuning_args.reward_model}")
+        return reward_fn
     elif finetuning_args.reward_model_type == "lora":
         model.pretrained_model.load_adapter(finetuning_args.reward_model, "reward")
         for name, param in model.named_parameters():  # https://github.com/huggingface/peft/issues/1090
@@ -186,6 +196,49 @@ def create_reward_model(
         logger.info_rank0(f"Loaded full weights of reward model from {finetuning_args.reward_model}")
         logger.warning_rank0("Please ensure the ppo model and reward model share SAME tokenizer and vocabulary.")
         return reward_model
+
+
+# <<<<<<<<
+# def create_reward_model(
+#     model: "AutoModelForCausalLMWithValueHead", model_args: "ModelArguments", finetuning_args: "FinetuningArguments"
+# ) -> Optional["AutoModelForCausalLMWithValueHead"]:
+#     r"""Create reward model for PPO training."""
+#     if finetuning_args.reward_model_type == "api":
+#         assert finetuning_args.reward_model.startswith("http"), "Please provide full url."
+#         logger.info_rank0(f"Use reward server {finetuning_args.reward_model}")
+#         return finetuning_args.reward_model
+#     elif finetuning_args.reward_model_type == "lora":
+#         model.pretrained_model.load_adapter(finetuning_args.reward_model, "reward")
+#         for name, param in model.named_parameters():  # https://github.com/huggingface/peft/issues/1090
+#             if "default" in name:
+#                 param.data = param.data.to(torch.float32)  # trainable params should in fp32
+#         vhead_params = load_valuehead_params(finetuning_args.reward_model, model_args)
+#         assert vhead_params is not None, "Reward model is not correctly loaded."
+#         model.register_buffer("reward_head_weight", vhead_params["v_head.summary.weight"], persistent=False)
+#         model.register_buffer("reward_head_bias", vhead_params["v_head.summary.bias"], persistent=False)
+#         model.register_buffer(
+#             "default_head_weight", torch.zeros_like(vhead_params["v_head.summary.weight"]), persistent=False
+#         )
+#         model.register_buffer(
+#             "default_head_bias", torch.zeros_like(vhead_params["v_head.summary.bias"]), persistent=False
+#         )
+#         logger.info_rank0(f"Loaded adapter weights of reward model from {finetuning_args.reward_model}")
+#         return None
+#     else:
+#         reward_model_args = ModelArguments.copyfrom(
+#             model_args,
+#             model_name_or_path=finetuning_args.reward_model,
+#             adapter_name_or_path=finetuning_args.reward_model_adapters,
+#             quantization_bit=finetuning_args.reward_model_quantization_bit,
+#         )
+#         reward_finetuning_args = FinetuningArguments()
+#         tokenizer = load_tokenizer(reward_model_args)["tokenizer"]
+#         reward_model = load_model(
+#             tokenizer, reward_model_args, reward_finetuning_args, is_trainable=False, add_valuehead=True
+#         )
+#         logger.info_rank0(f"Loaded full weights of reward model from {finetuning_args.reward_model}")
+#         logger.warning_rank0("Please ensure the ppo model and reward model share SAME tokenizer and vocabulary.")
+#         return reward_model
 
 
 def _get_decay_parameter_names(model: "PreTrainedModel") -> list[str]:

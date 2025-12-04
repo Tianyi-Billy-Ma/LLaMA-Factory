@@ -94,7 +94,7 @@ def _description_based_initialization(
 
         # >>>>>>>>
         special_token_id = tokenizer.convert_tokens_to_ids(key)
-        logger.info_rank0(f"Initialize new token {key} with token_id {special_token_id}.")
+        logger.info_rank0(f"Initialize new token {key}  [token_id {special_token_id}] [description {desc}].")
         if isinstance(special_token_id, list):
             logger.warning_rank0(f"Expected 1 special token id, got {len(special_token_id)} for key {key}")
             special_token_id = special_token_id[0]

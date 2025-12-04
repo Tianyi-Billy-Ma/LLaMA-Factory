@@ -378,7 +378,7 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
         queries: list["torch.Tensor"],
         responses: list["torch.Tensor"],
     ) -> list["torch.Tensor"]:
-        r"""Compute scores using given reward model.
+        """Compute scores using given reward model.
 
         Both inputs and outputs are put on CPU.
         """
@@ -386,6 +386,13 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
             token_ids = [torch.cat((q, r), dim=-1).tolist() for q, r in zip(queries, responses)]
             messages = self.tokenizer.batch_decode(token_ids, skip_special_tokens=False)
             return get_rewards_from_server(self.reward_model, messages)
+        # >>>>>>>>
+        elif self.finetuning_args.reward_model_type == "custom":
+            rewards = self.reward_model(queries, responses)
+            if not isinstance(rewards, torch.Tensor):
+                rewards = torch.tensor(rewards, dtype=torch.float32)
+            return rewards.detach().cpu().to(torch.float32).view(-1)
+        # <<<<<<<<
 
         batch: dict[str, torch.Tensor] = self.prepare_model_inputs(queries, responses)
         unwrapped_model: AutoModelForCausalLMWithValueHead = self.accelerator.unwrap_model(self.model)
