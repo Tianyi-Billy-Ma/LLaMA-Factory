@@ -25,6 +25,11 @@ from transformers.training_args import _convert_str_dict
 from typing_extensions import Self
 
 from ..extras.constants import AttentionFunction, EngineName, QuantizationMethod, RopeScaling
+
+# >>>>>>>>
+from ..extras.constants import DEFAULT_BACKTRACK_TOKEN
+
+# <<<<<<<<
 from ..extras.logging import get_logger
 
 
@@ -209,8 +214,8 @@ class BaseModelArguments:
             "help": "Whether to force initialize the embeddings when new tokens are added and need to be resized."
         },
     )
+    backtrack_token: str | None = DEFAULT_BACKTRACK_TOKEN
     # <<<<<<<<
-
 
     def __post_init__(self):
         if self.model_name_or_path is None:

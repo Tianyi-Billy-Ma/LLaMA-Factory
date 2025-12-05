@@ -388,7 +388,9 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
             return get_rewards_from_server(self.reward_model, messages)
         # >>>>>>>>
         elif self.finetuning_args.reward_model_type == "custom":
-            rewards = self.reward_model(queries, responses)
+            backtrack_token_id = self.tokenizer.convert_tokens_to_ids(self.model_args.backtrack_token)
+            assert isinstance(backtrack_token_id, int) , "Only one backtrack token is supported."
+            rewards = self.reward_model(queries, responses, backtrack_token_id=backtrack_token_id)
             if not isinstance(rewards, torch.Tensor):
                 rewards = torch.tensor(rewards, dtype=torch.float32)
             return rewards.detach().cpu().to(torch.float32).view(-1)
@@ -508,3 +510,28 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
         elif self.args.should_save:
             unwrapped_model: AutoModelForCausalLMWithValueHead = self.accelerator.unwrap_model(self.model)
             self._save(output_dir, state_dict=unwrapped_model.state_dict())
+
+    # >>>>>>>>
+    @override
+    def prepare_model_inputs(self, queries: torch.Tensor, responses: torch.Tensor):
+        if self.is_encoder_decoder:
+            input_data = self.data_collator(
+                [{"input_ids": q, "attention_mask": torch.ones_like(q)} for q in queries]
+            ).to(self.current_device)
+
+            decoder_inputs = self.data_collator(
+                [{"input_ids": r, "attention_mask": torch.ones_like(r)} for r in responses]
+            ).to(self.current_device)
+
+            input_data["decoder_input_ids"] = decoder_inputs["input_ids"]
+            input_data["decoder_attention_mask"] = decoder_inputs["attention_mask"]
+        else:
+            input_ids = [torch.cat([q, r]) for q, r in zip(queries, responses)]
+            input_data = self.data_collator(
+                [{"input_ids": ids, "attention_mask": torch.ones_like(ids)} for ids in input_ids]
+            ).to(self.current_device)
+
+        # input_data.pop("labels", None)  # we don't want to compute LM losses
+        return input_data
+
+    # <<<<<<<<
