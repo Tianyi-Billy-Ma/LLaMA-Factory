@@ -58,6 +58,10 @@ if TYPE_CHECKING:
     from ...hparams import FinetuningArguments, GeneratingArguments, ModelArguments
 
 
+# >>>>>>>>
+warnings.filterwarnings("ignore", category=UserWarning, module="transformers.trainer")
+# <<<<<<<<
+
 logger = logging.get_logger(__name__)
 
 
@@ -101,6 +105,9 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
             accelerator_kwargs={"step_scheduler_with_optimizer": False},
             log_with=training_args.report_to[0] if training_args.report_to else None,
             project_kwargs={"logging_dir": training_args.logging_dir},
+            # >>>>>>>>
+            remove_unused_columns=False,
+            # <<<<<<<<
         )
 
         # Add deepspeed config
@@ -184,6 +191,10 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
             self.accelerator.clip_grad_norm_ = MethodType(clip_grad_norm_old_version, self.accelerator)
             self.add_callback(BAdamCallback)
 
+        # >>>>>>>>
+        self.backtrack_token_id = None
+        # <<<<<<<<
+
     def ppo_train(self, resume_from_checkpoint: Optional[str] = None) -> None:
         r"""Implement training loop for the PPO stage, like _inner_training_loop() in Huggingface's Trainer."""
         if resume_from_checkpoint is not None:
@@ -245,8 +256,29 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
                     "input_ids": batch["input_ids"][idx : idx + self.config.mini_batch_size],
                     "attention_mask": batch["attention_mask"][idx : idx + self.config.mini_batch_size],
                 }
-                mini_batch_queries, mini_batch_responses = self.get_inputs(mini_batch)
-                mini_batch_rewards = self.get_rewards(mini_batch_queries, mini_batch_responses)
+
+                # >>>>>>>>
+                if "labels" in batch:
+                    mini_batch_labels = batch["labels"][idx : idx + self.config.mini_batch_size]
+                    mini_batch["labels"] = mini_batch_labels
+                    mini_batch_queries, mini_batch_responses, mini_batch_labels = self.get_inputs(mini_batch)
+                    mini_batch_rewards = self.get_rewards(
+                        mini_batch_queries,
+                        mini_batch_responses,
+                        mini_batch_labels,
+                    )
+                else:
+                    mini_batch_queries, mini_batch_responses = self.get_inputs(mini_batch)
+                    mini_batch_rewards = self.get_rewards(
+                        mini_batch_queries,
+                        mini_batch_responses,
+                    )
+                # <<<<<<<<
+                # mini_batch_queries, mini_batch_responses = self.get_inputs(mini_batch)
+                # mini_batch_rewards = self.get_rewards(
+                #     mini_batch_queries,
+                #     mini_batch_responses,
+                # )
                 queries.extend(mini_batch_queries)
                 responses.extend(mini_batch_responses)
                 rewards.extend(mini_batch_rewards)
@@ -370,6 +402,14 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
             queries.append(query[i, query_start_index:])  # remove padding from left
             responses.append(response[i, :response_length])  # remove padding from right
 
+        # >>>>>>>>
+        if "labels" in batch:
+            label, labels = batch["labels"].detach().cpu(), []
+            for i in range(len(label)):
+                label_start_index = (label[i] != -100).nonzero()[0].item()
+                labels.append(label[i, label_start_index:])
+            return queries, responses, labels
+        # <<<<<<<<
         return queries, responses
 
     @torch.no_grad()
@@ -377,6 +417,9 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
         self,
         queries: list["torch.Tensor"],
         responses: list["torch.Tensor"],
+        # >>>>>>>>
+        labels: list["torch.Tensor"] | None = None,
+        # <<<<<<<<
     ) -> list["torch.Tensor"]:
         """Compute scores using given reward model.
 
@@ -388,9 +431,11 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
             return get_rewards_from_server(self.reward_model, messages)
         # >>>>>>>>
         elif self.finetuning_args.reward_model_type == "custom":
-            backtrack_token_id = self.tokenizer.convert_tokens_to_ids(self.model_args.backtrack_token)
-            assert isinstance(backtrack_token_id, int) , "Only one backtrack token is supported."
-            rewards = self.reward_model(queries, responses, backtrack_token_id=backtrack_token_id)
+            self.backtrack_token_id = self.backtrack_token_id or self.tokenizer.convert_tokens_to_ids(
+                self.model_args.backtrack_token
+            )
+            assert isinstance(self.backtrack_token_id, int), "Only one backtrack token is supported."
+            rewards = self.reward_model(queries, responses, labels, backtrack_token_id=self.backtrack_token_id)
             if not isinstance(rewards, torch.Tensor):
                 rewards = torch.tensor(rewards, dtype=torch.float32)
             return rewards.detach().cpu().to(torch.float32).view(-1)
@@ -510,28 +555,3 @@ class CustomPPOTrainer(PPOTrainer, Trainer):
         elif self.args.should_save:
             unwrapped_model: AutoModelForCausalLMWithValueHead = self.accelerator.unwrap_model(self.model)
             self._save(output_dir, state_dict=unwrapped_model.state_dict())
-
-    # >>>>>>>>
-    @override
-    def prepare_model_inputs(self, queries: torch.Tensor, responses: torch.Tensor):
-        if self.is_encoder_decoder:
-            input_data = self.data_collator(
-                [{"input_ids": q, "attention_mask": torch.ones_like(q)} for q in queries]
-            ).to(self.current_device)
-
-            decoder_inputs = self.data_collator(
-                [{"input_ids": r, "attention_mask": torch.ones_like(r)} for r in responses]
-            ).to(self.current_device)
-
-            input_data["decoder_input_ids"] = decoder_inputs["input_ids"]
-            input_data["decoder_attention_mask"] = decoder_inputs["attention_mask"]
-        else:
-            input_ids = [torch.cat([q, r]) for q, r in zip(queries, responses)]
-            input_data = self.data_collator(
-                [{"input_ids": ids, "attention_mask": torch.ones_like(ids)} for ids in input_ids]
-            ).to(self.current_device)
-
-        # input_data.pop("labels", None)  # we don't want to compute LM losses
-        return input_data
-
-    # <<<<<<<<
